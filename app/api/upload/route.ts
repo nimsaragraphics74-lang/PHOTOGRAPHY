@@ -1,0 +1,3 @@
+import {env} from 'cloudflare:workers';
+import {getAdmin} from '../../admin-auth';
+export async function POST(req:Request){if(!await getAdmin())return new Response('Unauthorized',{status:401});if(req.headers.get('origin')!==new URL(req.url).origin)return new Response('Forbidden',{status:403});const f=(await req.formData()).get('file') as File;if(!f||!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>8*1024*1024)return new Response('Use JPG, PNG or WebP under 8 MB',{status:400});if(!env.BUCKET)return new Response('Storage unavailable',{status:503});const key=crypto.randomUUID();await env.BUCKET.put(key,await f.arrayBuffer(),{httpMetadata:{contentType:f.type}});return Response.json({url:'/media/'+key});}
